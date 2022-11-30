@@ -145,8 +145,6 @@ for bucket in buckets:
             write_vulnerable_folders.append(folder)
         if deleteVulnerableStatus:
             delete_vulnerable_folders.append(folder)
-        # Exit for now, while testing.
-        #exit()
 
     # Write vulnerable paths to output files 
     write_folder_list_to_output_file(write_vulnerable_folders, writeVulnerableBucketsAndFoldersOutputPath)
