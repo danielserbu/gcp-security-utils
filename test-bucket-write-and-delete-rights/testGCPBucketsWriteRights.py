@@ -14,6 +14,11 @@ args = parser.parse_args()
 bucketFoldersFile = args.bucketfolderslist
 testFile = args.testfile
 
+if not os.path.isfile(testFile):
+    print("File to be uploaded does not exist.")
+    print("Exiting.. ")
+    exit()
+
 buckets = open(bucketFoldersFile).read().splitlines()
 # Check if buckets in list are badly formated: e.g if they have more than 2 //
 for bucket in buckets:
@@ -35,15 +40,27 @@ print(Fore.CYAN + Style.BRIGHT + "Started testing buckets for write and delete r
 # Functions
 def list_folders_in_bucket_folder(bucketFolder):
     print("Listing bucket folder " + bucketFolder)
-    items = os.popen("gsutil ls " + bucketFolder).read().splitlines()
+    process = subprocess.Popen("gsutil ls " + bucketFolder, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
+    stderroutput = ''
+    stdoutput = ''
+    while True:
+        stderroutput += process.stderr.read()
+        stdoutput += process.stdout.read()
+        if process.stderr.read() == '' and process.poll() != None:
+            break
+    if "AccessDeniedException: 403" and "does not have storage.objects.list access" in stderroutput:
+        print(Fore.YELLOW + Style.BRIGHT + "[?] " + bucketFolder + " is not listable!")
+        return "Not listable"
+    filesAndFolders = stdoutput.splitlines()
+    folders = []
     try:
         # select only folders (remove files from list)
-        for item in items:
-            if item[-1] != '/':
-                items.remove(item)
-    except IndexError as ie:
-        print("Nothing inside the folder")
-    return items
+        for item in filesAndFolders:
+            if item[-1] == '/':
+                folders.append(item)
+    except Exception as e:
+        print("Exception")
+    return folders
 
 def list_subfolders_from_list_of_folders(list_of_folders):
     items = []
@@ -131,6 +148,9 @@ for bucket in buckets:
     delete_vulnerable_folders.clear()
     # List folders in bucket
     items = list_folders_in_bucket_folder(bucket)
+    # If bucket is not listable, move on.
+    if items == "Not listable":
+        continue
     folders_already_listed.append(bucket)
     all_discovered_folders_in_bucket.extend(items)
     # Continue listing subfolders
