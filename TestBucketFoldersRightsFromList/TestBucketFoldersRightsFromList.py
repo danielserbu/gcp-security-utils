@@ -8,7 +8,7 @@ import argparse
 colorama.init(autoreset = True)
 
 parser = argparse.ArgumentParser(description="GCP Bucket Write and Deletion rights tester.")
-parser.add_argument("-iF", "--bucketfolderslist", help="Bucket Folders List. Default is listOfOpenBuckets.txt", default="listOfOpenBuckets.txt")
+parser.add_argument("-iF", "--bucketfolderslist", help="Bucket Folders List. Default is FoldersList.txt", default="FoldersList.txt")
 parser.add_argument("-tF", "--testfile", help="Test file used for upload. Default is testfile", default="testfile")
 args = parser.parse_args()
 bucketFoldersFile = args.bucketfolderslist
@@ -18,72 +18,37 @@ if not os.path.isfile(testFile):
     print("File to be uploaded does not exist.")
     print("Exiting.. ")
     exit()
+    
+# In case folders inside input file don't have /'s at the end.
 
-buckets = open(bucketFoldersFile).read().splitlines()
-# Check if buckets in list are badly formated: e.g if they have more than 2 //
-for bucket in buckets:
-    if bucket.count('/') > 3:
-        print("One or more elements in input list are badly formatted.")
+folders = open(bucketFoldersFile).read().splitlines()
+
+for folder in folders:
+    if folder[-1] != '/':
+        print("Error at path: " + folder)
+        print("File in folders list.")
+        print("Please remove the file or add / at the end in case it is a folder.")
         print("Exiting.. ")
         exit()
+    elif "gs://" not in folder:
+        print("Error at path: " + folder)
+        print("Folder is not a google cloud bucket folder.")
+        print("Please format the file accordingly with elements starting with gs://")
+        print("Exiting.. ")
+        exit()
+
+#In case folders are duplicate inside input file.
+unique_folders = list(set(folders))
+
 outputFolder = "output"
 runTime = time.strftime("%Y-%m-%d--%H-%M")
 writeVulnerableBucketsAndFoldersOutputPath = outputFolder + "/OutputWriteVulnerableBucketsAndFolders-" + runTime + ".txt"
 deleteVulnerableBucketsAndFoldersOutputPath = outputFolder + "/OutputDeleteVulnerableBucketsAndFolders-" + runTime + ".txt"
-# These lists are populated and cleared for each bucket.
-folders_already_listed = []
+
 write_vulnerable_folders = []
 delete_vulnerable_folders = []
 
-print(Fore.CYAN + Style.BRIGHT + "Started testing buckets for write and delete rights" + '\n', end='')
-
-# Functions
-def list_folders_in_bucket_folder(bucketFolder):
-    print("Listing bucket folder " + bucketFolder)
-    process = subprocess.Popen("gsutil ls " + bucketFolder, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, shell=True)
-    stderroutput = ''
-    stdoutput = ''
-    while True:
-        stderroutput += process.stderr.read()
-        stdoutput += process.stdout.read()
-        if process.stderr.read() == '' and process.poll() != None:
-            break
-    if "AccessDeniedException: 403" and "does not have storage.objects.list access" in stderroutput:
-        print(Fore.YELLOW + Style.BRIGHT + "[?] " + bucketFolder + " is not listable!")
-        return "Not listable"
-    filesAndFolders = stdoutput.splitlines()
-    folders = []
-    try:
-        # select only folders (remove files from list)
-        for item in filesAndFolders:
-            if item[-1] == '/':
-                folders.append(item)
-    except Exception as e:
-        print("Exception")
-    return folders
-
-def list_subfolders_from_list_of_folders(list_of_folders):
-    items = []
-    for folder in list_of_folders:
-        if folder not in folders_already_listed:
-            new_items = list_folders_in_bucket_folder(folder)
-            folders_already_listed.append(folder)
-            items.extend(new_items)
-    return items
-
-def list_all_subfolders_in_bucket(list_of_folders):
-    items = []
-    new_items = list_subfolders_from_list_of_folders(list_of_folders)
-    if len(new_items) != 0:
-        items.extend(new_items)
-        # Explore all subfolders
-        while True:
-            new_items = list_subfolders_from_list_of_folders(new_items)
-            if len(new_items) == 0:
-                break
-            elif len(new_items) != 0:
-                items.extend(new_items)
-    return items
+print(Fore.CYAN + Style.BRIGHT + "Started testing bucket folders for write and delete rights" + '\n', end='')
 
 def test_delete_rights_in_bucket_folder(folder):
     print(Style.BRIGHT + "Testing delete rights for folder " + folder)
@@ -131,41 +96,24 @@ def write_folder_list_to_output_file(folderList, outputFile):
     with open(outputFile, "a") as file:
         for folder in folderList:
             file.writelines(folder + '\n')
-# Functions
-
+            
 # Do work 
-for bucket in buckets:
+for folder in unique_folders:
     print("========================================")
-    print(Fore.CYAN + Style.BRIGHT + "Assessing bucket: " + bucket + '\n', end='')
-    print("Listing bucket folders..")
-    all_discovered_folders_in_bucket = []
-    # In case buckets inside input file don't have /'s at the end.
-    if bucket[-1] != '/':
-        bucket = bucket + '/'
+    print(Fore.CYAN + Style.BRIGHT + "Assessing bucket folder: " + folder + '\n', end='')
     # Start with clear lists.
-    folders_already_listed.clear()
     write_vulnerable_folders.clear()
     delete_vulnerable_folders.clear()
-    # List folders in bucket
-    items = list_folders_in_bucket_folder(bucket)
-    # If bucket is not listable, move on.
-    if items == "Not listable":
-        continue
-    folders_already_listed.append(bucket)
-    all_discovered_folders_in_bucket.extend(items)
-    # Continue listing subfolders
-    new_items = list_all_subfolders_in_bucket(items)
-    all_discovered_folders_in_bucket.extend(new_items)
-    unique_folders = list(set(all_discovered_folders_in_bucket))
-    unique_folders.append(bucket)
-    # Test write and delete rights on subfolders
-    for folder in unique_folders:
-        writeVulnerableStatus, deleteVulnerableStatus = test_write_rights_in_bucket_folder(folder)
-        if writeVulnerableStatus:
-            write_vulnerable_folders.append(folder)
-        if deleteVulnerableStatus:
-            delete_vulnerable_folders.append(folder)
+    
+    writeVulnerableStatus, deleteVulnerableStatus = test_write_rights_in_bucket_folder(folder)
+    if writeVulnerableStatus:
+        write_vulnerable_folders.append(folder)
+    if deleteVulnerableStatus:
+        delete_vulnerable_folders.append(folder)
 
     # Write vulnerable paths to output files 
     write_folder_list_to_output_file(write_vulnerable_folders, writeVulnerableBucketsAndFoldersOutputPath)
     write_folder_list_to_output_file(delete_vulnerable_folders, deleteVulnerableBucketsAndFoldersOutputPath)
+    
+print("Done")
+print("Make sure to check output folder in case anything has been found.")
