@@ -2,7 +2,9 @@
 
 ## Description:
 ### Program receives a list of bucket folders, will try to write into each and if writing was successful then it will try to delete the previously written file, providing output to the user and writing to output file at the end.
-### To gather the buckets manually you can do "gsutil ls -r gs://demo-bucket-one/**" and then filter out files (elements not ending with /)
+### To gather the bucket subfolders manually you can do:
+### Windows ' gsutil ls -r gs://demo-bucket-one/** | Select-String -pattern "/$" '
+### Linux ' gsutil ls -r gs://demo-bucket-one/** | grep -e "/$" '
 ### Things to be taken into account:
 ### 1. If write was successful, but deletion wasn't, you will have to clean up the files by hand from google cloud console or gsutil.
 ### 2. If file is already inside the bucket folder, and you don't have deletion rights, the write test will not work properly (You will receive a [?] warning).
