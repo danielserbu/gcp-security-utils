@@ -10,7 +10,7 @@
 ### 1. If write was successful, but deletion wasn't, you will have to clean up the files by hand from google cloud console or gsutil.
 ### 2. If file is already inside the bucket folder, and you don't have deletion rights, the write test will not work properly (You will receive a [?] warning).
 ### 3. If couldn't write, then deletion test will not happen.
-### Requirements: gsutil, being authenticated with gsutil
+### Requirements: gsutil, being authenticated with gcloud (gcloud auth list, then check for active account)
 ### Arguments: 
 ### -iF (or --bucketfolderslist) pathToInputFile (containing buckets separated by new lines) [Default is "FoldersList.txt"]
 ### -tF (or --testfile) pathToTestFile (file to upload) [Default is "testfile"]
