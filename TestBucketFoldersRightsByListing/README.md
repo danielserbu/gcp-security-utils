@@ -7,7 +7,7 @@
 ### 2. If file is already inside the bucket folder, and you don't have deletion rights, the write test will not work properly (You will receive a [?] warning).
 ### 3. If couldn't write, then deletion test will not happen.
 ### 4. Known problem that has no fix momentarily. If there are many files inside a specific subfolder, then the process halts until killed. To counter this problem please use TestBucketFoldersRightsFromList program.
-### Requirements: gsutil, being authenticated with gsutil
+### Requirements: gsutil, being authenticated with gcloud (gcloud auth list, then check for active account)
 ### Arguments: 
 ### -iF (or --bucketfolderslist) pathToInputFile (containing buckets separated by new lines) [Default is "listOfOpenBuckets.txt"]
 ### -tF (or --testfile) pathToTestFile (file to upload) [Default is "testfile"]
