@@ -18,8 +18,6 @@ if not os.path.isfile(testFile):
     print("File to be uploaded does not exist.")
     print("Exiting.. ")
     exit()
-    
-# In case folders inside input file don't have /'s at the end.
 
 folders = open(bucketFoldersFile).read().splitlines()
 
