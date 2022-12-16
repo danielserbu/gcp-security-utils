@@ -28,7 +28,7 @@ for folder in folders:
         print("Please remove the file or add / at the end in case it is a folder.")
         print("Exiting.. ")
         exit()
-    elif "gs://" not in folder:
+    elif folder.startswith("gs://") is False:
         print("Error at path: " + folder)
         print("Folder is not a google cloud bucket folder.")
         print("Please format the file accordingly with elements starting with gs://")
