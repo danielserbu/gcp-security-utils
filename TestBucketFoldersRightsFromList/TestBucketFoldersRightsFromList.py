@@ -22,7 +22,7 @@ if not os.path.isfile(testFile):
 folders = open(bucketFoldersFile).read().splitlines()
 
 for folder in folders:
-    if folder[-1] != '/':
+    if folder.endswith("/") is False:
         print("Error at path: " + folder)
         print("File in folders list.")
         print("Please remove the file or add / at the end in case it is a folder.")
